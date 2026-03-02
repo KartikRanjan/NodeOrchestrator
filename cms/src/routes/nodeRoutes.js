@@ -17,7 +17,7 @@ function createNodeRoutes(nodeController) {
 
   // Open — consumed by React frontend
   router.get('/', nodeController.listAll);
-  router.get('/:nodeId', nodeController.getById);
+  router.get('/:nodeId', nodeController.getNodeById);
 
   return router;
 }
