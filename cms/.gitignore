@@ -1,6 +1,4 @@
 node_modules/
-dev.sqlite3
 uploads/*
 !uploads/.gitkeep
 .env
-DESIGN.md
