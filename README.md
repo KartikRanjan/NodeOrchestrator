@@ -31,13 +31,42 @@ npm run install:all
 ```
 
 ### 3. Environment Variables
-Create a `.env` file in the **root directory**:
+The project uses environment variables for security and configuration.
 
-**Root `.env` (shared by scripts and Docker):**
+**Root `.env` (Required):**
+Create a `.env` file in the **root directory**. This file is used by the `cms` service (via a symlink or direct reference) and by the `scripts/start-nodes.js` orchestration script.
+
 ```env
 API_KEY=your_secure_api_key
 DB_URI=postgresql://user:pass@host:5432/dbname
 ```
+
+- **`API_KEY`**: A shared secret used to authenticate Node Workers with the CMS.
+- **`DB_URI`**: Connection string for your PostgreSQL database (used by CMS).
+
+> **💡 Tip:** You can generate a secure 32-byte hex key using your terminal:
+> ```bash
+> # Using openssl
+> openssl rand -hex 32
+>
+> # OR using Node.js
+> node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+> ```
+
+> **Note:** The `scripts/start-nodes.js` script reads the `API_KEY` directly from the root `.env` to pass it to worker instances. Ensure this file exists before running `npm run nodes`.
+
+**Frontend `.env` (Required):**
+The frontend is built with Vite and requires its own `.env` file in the `frontend/` directory. Vite only exposes variables prefixed with `VITE_` to the client-side code.
+
+```env
+VITE_CMS_API_URL=http://localhost:3000/api
+VITE_CMS_SOCKET_URL=http://localhost:3000
+VITE_API_KEY=your_secure_api_key
+```
+
+- **`VITE_API_KEY`**: **Must match the `API_KEY` in the root `.env`.** This allows the dashboard to authenticate with the CMS.
+- **`VITE_CMS_API_URL`**: The base URL for the CMS REST API.
+- **`VITE_CMS_SOCKET_URL`**: The base URL for the CMS Socket.IO server.
 
 ---
 

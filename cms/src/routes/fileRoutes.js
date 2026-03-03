@@ -24,7 +24,7 @@ function createFileRoutes(fileController) {
   router.post('/upload', authMiddleware, uploadMiddleware.single('file'), fileController.upload);
 
   // Open — list all uploads with statuses
-  router.get('/', fileController.listAll);
+  router.get('/', authMiddleware, fileController.listAll);
 
   return router;
 }
