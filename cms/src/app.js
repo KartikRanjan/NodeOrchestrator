@@ -1,6 +1,7 @@
 import { createServer } from 'http';
 import express from 'express';
 import cors from 'cors';
+import morgan from 'morgan';
 import { Server as SocketIOServer } from 'socket.io';
 import container from './container.js';
 
@@ -31,6 +32,7 @@ function createApp() {
 
   // Global middleware
   app.use(cors());
+  app.use(morgan('dev'));
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
 
