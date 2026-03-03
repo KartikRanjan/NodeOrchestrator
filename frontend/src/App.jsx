@@ -20,9 +20,9 @@ function App() {
       <Navbar />
 
       <main className="flex-1 overflow-hidden w-full mx-auto px-4 sm:px-6 lg:px-12 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-full">
           {/* Node Monitoring */}
-          <div className="lg:col-span-2 h-full overflow-hidden">
+          <div className="lg:col-span-3 h-full overflow-hidden">
             <NodeTable />
           </div>
 

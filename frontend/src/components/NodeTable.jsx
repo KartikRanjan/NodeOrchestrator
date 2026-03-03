@@ -61,7 +61,7 @@ const StatusBadge = ({ status }) => {
 /**
  * NodeRow - Renders single node with flash animation on update.
  */
-const NodeRow = ({ node, isUpdated, onFlashDone }) => {
+const NodeRow = ({ node, index, isUpdated, onFlashDone }) => {
   const [flashing, setFlashing] = useState(false);
   const timerRef = useRef(null);
 
@@ -84,9 +84,12 @@ const NodeRow = ({ node, isUpdated, onFlashDone }) => {
         flashing ? 'bg-blue-50' : 'bg-white hover:bg-gray-50'
       }`}
     >
-      <td className="px-6 py-4 whitespace-nowrap">
+      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-400 font-medium">
+        {index + 1}
+      </td>
+      <td className="px-4 py-3 whitespace-nowrap">
         <div className="flex items-center gap-3">
-          <HardDrive className="w-5 h-5 text-gray-400 shrink-0" />
+          <HardDrive className="w-4 h-4 text-gray-400 shrink-0" />
           <span className="text-sm font-mono font-medium text-gray-900">
             {node.nodeId}
           </span>
@@ -98,19 +101,19 @@ const NodeRow = ({ node, isUpdated, onFlashDone }) => {
         </div>
       </td>
 
-      <td className="px-6 py-4 whitespace-nowrap">
+      <td className="px-4 py-3 whitespace-nowrap">
         <div className="text-sm text-gray-900">{node.ip}</div>
         <div className="text-sm text-gray-500">Port: {node.port}</div>
       </td>
 
-      <td className="px-6 py-4 whitespace-nowrap">
+      <td className="px-4 py-3 whitespace-nowrap">
         <StatusBadge status={node.status} />
       </td>
 
-      <td className="px-6 py-4 whitespace-nowrap">
+      <td className="px-4 py-3 whitespace-nowrap">
         {node.lastFileUploadTime ? (
           <div className="flex items-center gap-2 text-sm text-gray-700">
-            <Clock className="w-4 h-4 text-blue-400 shrink-0" />
+            <Clock className="w-3.5 h-3.5 text-blue-400 shrink-0" />
             <span>
               {new Date(node.lastFileUploadTime).toLocaleString(undefined, {
                 month: 'short',
@@ -126,7 +129,7 @@ const NodeRow = ({ node, isUpdated, onFlashDone }) => {
         )}
       </td>
 
-      <td className="px-6 py-4">
+      <td className="px-4 py-3">
         <UploadStatusBadge
           status={node.lastUploadStatus}
           filename={node.lastUploadFilename}
@@ -188,9 +191,9 @@ const NodeTable = () => {
         </div>
       )}
 
-      <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="px-4 py-3 border-b border-gray-200 bg-gray-50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-          <Server className="w-5 h-5 text-blue-500" />
+          <Server className="w-4 h-4 text-blue-500" />
           Nodes ({filteredNodes.length})
           {updatedNodeIds.length > 0 && (
             <span className="text-xs font-normal text-blue-500 animate-pulse">
@@ -237,19 +240,22 @@ const NodeTable = () => {
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50 sticky top-0 z-10 shadow-sm">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
+              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
+                #
+              </th>
+              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
                 Node ID
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
+              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
                 Network
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
+              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
                 Status
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
+              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
                 Last Upload Time
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
+              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
                 Upload Result
               </th>
             </tr>
@@ -257,7 +263,7 @@ const NodeTable = () => {
           <tbody className="divide-y divide-gray-200">
             {filteredNodes.length === 0 ? (
               <tr>
-                <td colSpan="5" className="px-6 py-12 text-center text-gray-500">
+                <td colSpan="6" className="px-6 py-12 text-center text-gray-500">
                   <Activity className="w-12 h-12 text-gray-300 mx-auto mb-3" />
                   <p>No {filter !== 'all' ? filter : ''} nodes found.</p>
                   {filter === 'all' && (
@@ -268,10 +274,11 @@ const NodeTable = () => {
                 </td>
               </tr>
             ) : (
-              filteredNodes.map((node) => (
+              filteredNodes.map((node, index) => (
                 <NodeRow
                   key={node.nodeId}
                   node={node}
+                  index={index}
                   isUpdated={updatedNodeIds.includes(node.nodeId)}
                   onFlashDone={handleFlashDone}
                 />

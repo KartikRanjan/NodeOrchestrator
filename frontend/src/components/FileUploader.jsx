@@ -37,21 +37,21 @@ const FileUploader = () => {
   const summary = getUploadSummary();
 
   return (
-    <div className="bg-white shadow-md rounded-lg overflow-hidden border border-gray-200 p-6">
+    <div className="bg-white shadow-md rounded-lg overflow-hidden border border-gray-200 p-4">
       <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-        <UploadCloud className="w-5 h-5 text-blue-500" />
+        <UploadCloud className="w-4 h-4 text-blue-500" />
         File Distribution
       </h2>
 
       {!selectedFile ? (
         /* Dropzone */
         <div 
-          className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:bg-gray-50 transition-colors cursor-pointer"
+          className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:bg-gray-50 transition-colors cursor-pointer"
           onClick={() => fileInputRef.current?.click()}
         >
-          <UploadCloud className="w-10 h-10 text-gray-400 mx-auto mb-3" />
-          <p className="text-gray-600 font-medium">Click or drag file to upload</p>
-          <p className="text-sm text-gray-400 mt-1">Files propagate to all active nodes</p>
+          <UploadCloud className="w-8 h-8 text-gray-400 mx-auto mb-3" />
+          <p className="text-gray-600 font-medium text-sm">Click or drag file to upload</p>
+          <p className="text-xs text-gray-400 mt-1">Files propagate to all active nodes</p>
           <input
             type="file"
             className="hidden"
@@ -62,9 +62,9 @@ const FileUploader = () => {
       ) : (
         /* File Preview & Actions */
         <div className="space-y-4">
-          <div className="flex items-center justify-between p-4 bg-gray-50 border border-gray-200 rounded-lg">
+          <div className="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-lg">
             <div className="flex items-center gap-3 overflow-hidden">
-              <File className="w-8 h-8 text-blue-500 flex-shrink-0" />
+              <File className="w-6 h-6 text-blue-500 flex-shrink-0" />
               <div className="truncate">
                 <p className="text-sm font-medium text-gray-900 truncate">{selectedFile.name}</p>
                 <p className="text-xs text-gray-500">{(selectedFile.size / 1024 / 1024).toFixed(2)} MB</p>
@@ -76,7 +76,7 @@ const FileUploader = () => {
                 className="text-gray-400 hover:text-red-500 transition-colors"
                 title="Remove file"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             )}
           </div>
@@ -100,7 +100,7 @@ const FileUploader = () => {
           {/* Feedback Messages */}
           {error && (
             <div className="flex items-start gap-2 text-sm text-red-600 bg-red-50 p-3 rounded border border-red-200">
-              <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+              <AlertCircle className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
               <div>
                 <p className="font-semibold">{error.message || 'Upload failed.'}</p>
                 {error.error && <p className="text-xs mt-1 opacity-70">Code: {error.error}</p>}
@@ -110,7 +110,7 @@ const FileUploader = () => {
 
           {success && lastResult && (
             <div className={`flex items-start gap-2 text-sm p-3 rounded border ${summary?.failed > 0 ? 'text-amber-700 bg-amber-50 border-amber-200' : 'text-green-700 bg-green-50 border-green-200'}`}>
-              {summary?.failed > 0 ? <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" /> : <CheckCircle2 className="w-4 h-4 mt-0.5 flex-shrink-0" />}
+              {summary?.failed > 0 ? <AlertCircle className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" /> : <CheckCircle2 className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />}
               <div>
                 <p className="font-medium">
                   {summary?.failed === 0 
