@@ -12,8 +12,7 @@ const config = {
 
   db: {
     client: 'pg',
-    connectionString:
-      process.env.DB_URI
+    connectionString: process.env.DB_URI,
   },
 };
 
