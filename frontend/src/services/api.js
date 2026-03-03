@@ -10,16 +10,12 @@ const api = axios.create({
   },
 });
 
-// Response Interceptor for normalization
+// Response Interceptor: Unwrap data and normalize errors
 api.interceptors.response.use(
-  (response) => {
-    // Return only the data portion of the response
-    return response.data;
-  },
+  (response) => response.data,
   (error) => {
-    // Normalize error response
     const normalizedError = {
-      message: error.response?.data?.message || error.message || 'An unexpected error occurred',
+      message: error.response?.data?.message || error.message || 'Unexpected error occurred',
       error: error.response?.data?.error || error.code || 'UNKNOWN_ERROR',
       success: false,
       status: error.response?.status,

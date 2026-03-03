@@ -7,7 +7,6 @@ export const fetchNodes = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await api.get('/nodes');
-      // response is already the data because of the interceptor
       return response.data || [];
     } catch (error) {
       return rejectWithValue(error);
@@ -21,34 +20,72 @@ const nodesSlice = createSlice({
     data: [],
     loading: false,
     error: null,
+    updatedNodeIds: [], // nodeIds that just changed via socket — triggers row flash
   },
   reducers: {
-    // Reducers for optional real-time updates (Socket.io)
-    nodeConnected: (state, action) => {
-      const { nodeId } = action.payload;
-      const existingNode = state.data.find((n) => n.nodeId === nodeId);
-      if (existingNode) {
-        existingNode.status = 'connected';
-      } else {
-        // If it's a completely new node
-        state.data.push({ ...action.payload, status: 'connected' });
+    /**
+     * nodeStatusUpdated: Updates node online/offline status.
+     * payload: { nodeId, status, ip?, port?, timestamp }
+     */
+    nodeStatusUpdated: (state, action) => {
+      const { nodeId, status, ip, port, timestamp } = action.payload;
+      const existing = state.data.find((n) => n.nodeId === nodeId);
+
+      if (existing) {
+        existing.status = status;
+        if (ip) existing.ip = ip;
+        if (port) existing.port = port;
+        if (timestamp) existing.updatedAt = timestamp;
+      } else if (status === 'connected') {
+        state.data.unshift({
+          nodeId,
+          ip: ip || '—',
+          port: port || '—',
+          status: 'connected',
+          updatedAt: timestamp,
+          lastFileUploadTime: null,
+          lastUploadStatus: null,
+          lastUploadFilename: null,
+          lastUploadError: null,
+        });
+      }
+
+      if (!state.updatedNodeIds.includes(nodeId)) {
+        state.updatedNodeIds.push(nodeId);
       }
     },
-    nodeDisconnected: (state, action) => {
-      const { nodeId } = action.payload;
-      const existingNode = state.data.find((n) => n.nodeId === nodeId);
-      if (existingNode) {
-        existingNode.status = 'disconnected';
-      }
+
+    /**
+     * clearUpdatedNode: Clears flash animation marker for a node.
+     */
+    clearUpdatedNode: (state, action) => {
+      state.updatedNodeIds = state.updatedNodeIds.filter((id) => id !== action.payload);
     },
+
+    /**
+     * updateNodeUploadStatus: Sets node's last upload result.
+     * payload: { nodeId, status, filename?, error? }
+     */
     updateNodeUploadStatus: (state, action) => {
-      // payload: { nodeId, fileId, status, filename }
-      const { nodeId, status } = action.payload;
+      const { nodeId, status, filename, error } = action.payload;
       const node = state.data.find((n) => n.nodeId === nodeId);
       if (node) {
         node.lastUploadStatus = status;
+        node.lastUploadFilename = filename || node.lastUploadFilename || null;
+        node.lastUploadError = error || null;
       }
-    }
+    },
+
+    nodeConnected: (state, action) => {
+      nodesSlice.caseReducers.nodeStatusUpdated(state, {
+        payload: { ...action.payload, status: 'connected' },
+      });
+    },
+    nodeDisconnected: (state, action) => {
+      nodesSlice.caseReducers.nodeStatusUpdated(state, {
+        payload: { ...action.payload, status: 'disconnected' },
+      });
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -59,6 +96,7 @@ const nodesSlice = createSlice({
       .addCase(fetchNodes.fulfilled, (state, action) => {
         state.loading = false;
         state.data = action.payload;
+        state.updatedNodeIds = []; // REST refresh is authoritative — clear flash markers
       })
       .addCase(fetchNodes.rejected, (state, action) => {
         state.loading = false;
@@ -67,5 +105,12 @@ const nodesSlice = createSlice({
   },
 });
 
-export const { nodeConnected, nodeDisconnected, updateNodeUploadStatus } = nodesSlice.actions;
+export const {
+  nodeStatusUpdated,
+  clearUpdatedNode,
+  updateNodeUploadStatus,
+  nodeConnected,
+  nodeDisconnected,
+} = nodesSlice.actions;
+
 export default nodesSlice.reducer;
