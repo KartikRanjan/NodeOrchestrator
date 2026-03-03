@@ -1,0 +1,16 @@
+{
+  "name": "nodeorchestrator",
+  "version": "1.0.0",
+  "description": "Monorepo root — orchestrates CMS and Node worker processes locally",
+  "scripts": {
+    "cms": "npm run dev --prefix cms",
+    "nodes": "node scripts/start-nodes.js",
+    "kill:nodes": "lsof -ti :4001,:4002,:4003,:4004,:4005 | xargs kill -9 2>/dev/null; echo 'All node workers killed'",
+    "install:all": "npm install --prefix cms && npm install --prefix node-app"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}

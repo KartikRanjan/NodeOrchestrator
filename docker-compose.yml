@@ -1,0 +1,64 @@
+services:
+
+  # ── Central Management Server ────────────────────────────────────────────
+  cms:
+    build:
+      context: ./cms
+      dockerfile: Dockerfile
+    container_name: cms
+    ports:
+      - "3000:3000"        # Expose CMS on host port 3000
+    environment:
+      PORT: 3000
+      API_KEY: ${API_KEY}
+      DB_URI: ${DB_URI}
+      NODE_ENV: development
+    networks:
+      - orchestrator-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/nodes"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+
+  # ── Node Worker ───────────────────────────────────────────────────────────
+  # Scale with: docker compose up --build --scale node=3
+  #
+  # KEY DESIGN NOTE:
+  # Each scaled replica must have a unique NODE_ID and report its own container
+  # hostname as its IP so the CMS can reach it within the Docker network.
+  # We override the entrypoint to dynamically inject $$HOSTNAME at container
+  # startup — Docker sets HOSTNAME to the container's short ID/name, which is
+  # resolvable within the shared network.
+  node:
+    build:
+      context: ./node-app
+      dockerfile: Dockerfile
+    # No container_name here — required for --scale to work (unique names per replica)
+    # No fixed host port mapping — with --scale N, N replicas can't all bind the same host port
+    environment:
+      PORT: 4001
+      API_KEY: ${API_KEY}
+      CMS_URL: "http://cms:3000"   # Resolves via Docker DNS on orchestrator-net
+    # Dynamically set NODE_ID and NODE_IP to the container's hostname at runtime.
+    # $$HOSTNAME prevents Compose from interpolating it at parse time; the shell
+    # inside the container expands it at startup instead.
+    command: >
+      sh -c "NODE_ID=$$(node src/utils/id-gen.js) NODE_IP=$$(hostname -i) npm run dev"
+    networks:
+      - orchestrator-net
+    depends_on:
+      cms:
+        condition: service_healthy
+    restart: unless-stopped
+
+networks:
+  orchestrator-net:
+    driver: bridge
+    enable_ipv6: true
+    ipam:
+      config:
+        - subnet: "172.28.0.0/16"   # IPv4 range for container-to-container traffic
+        - subnet: "fd00::/80"        # IPv6 ULA range — enables outbound IPv6 (e.g. Supabase)
