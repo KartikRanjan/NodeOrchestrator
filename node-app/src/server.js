@@ -1,16 +1,24 @@
 /**
- * Node App Server Entry Point
  * @module server
  * @description Bootstraps the Node application, starts the HTTP server, 
  * and handles registration with the central CMS.
  */
+
 import config from './config/index.js';
 import createApp from './app.js';
-import { registerWithCMS, disconnectFromCMS } from './services/registrationService.js';
+import {
+    registerWithCMS,
+    disconnectFromCMS,
+    connectSocket,
+    disconnectSocket,
+} from './services/registrationService.js';
 
-// Graceful shutdown — notify CMS before exiting
+// Graceful shutdown — cleanup and notify CMS
 const shutdown = async (signal, server) => {
     console.log(`[${config.nodeId}] Received ${signal}, starting graceful shutdown...`);
+
+    disconnectSocket();
+
     try {
         await disconnectFromCMS();
     } catch (err) {
@@ -33,10 +41,10 @@ async function main() {
     const server = app.listen(config.port, () => {
         console.log(`[${config.nodeId}] Node App listening on port ${config.port}`);
 
-        // Initial registration with retry logic
         const register = async () => {
             try {
                 await registerWithCMS();
+                connectSocket();
             } catch (err) {
                 const RETRY_DELAY = 5000;
                 console.warn(`[${config.nodeId}] CMS registration failed — retrying in ${RETRY_DELAY / 1000}s...`);
