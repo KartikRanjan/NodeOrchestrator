@@ -5,9 +5,12 @@
  * including nodes, file uploads, and status tracking tables.
  */
 export async function up(knex) {
+  // Ensure we can generate UUIDs (standard in PG)
+  await knex.raw('CREATE EXTENSION IF NOT EXISTS "pgcrypto"');
+
   // --- nodes ---
   await knex.schema.createTable('nodes', (table) => {
-    table.increments('id').primary();
+    table.uuid('id').primary().defaultTo(knex.raw('gen_random_uuid()'));
     table.string('node_id', 100).notNullable().unique();
     table.string('ip', 45).notNullable();
     table.integer('port').notNullable();
@@ -18,17 +21,16 @@ export async function up(knex) {
 
   // --- file_uploads ---
   await knex.schema.createTable('file_uploads', (table) => {
-    table.increments('id').primary();
+    table.uuid('id').primary().defaultTo(knex.raw('gen_random_uuid()'));
     table.string('filename', 255).notNullable();
     table.timestamp('uploaded_at').defaultTo(knex.fn.now());
   });
 
   // --- node_upload_status ---
   await knex.schema.createTable('node_upload_status', (table) => {
-    table.increments('id').primary();
+    table.uuid('id').primary().defaultTo(knex.raw('gen_random_uuid()'));
     table
-      .integer('file_upload_id')
-      .unsigned()
+      .uuid('file_upload_id')
       .notNullable()
       .references('id')
       .inTable('file_uploads')
