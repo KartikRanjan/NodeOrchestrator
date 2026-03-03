@@ -6,6 +6,9 @@
  */
 import 'dotenv/config';
 import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const config = {
     nodeId: process.env.NODE_ID || 'node-01',
@@ -15,7 +18,7 @@ const config = {
     port: parseInt(process.env.PORT, 10) || 5001,
     cmsUrl: process.env.CMS_URL || 'http://localhost:3000',
     apiKey: process.env.API_KEY,
-    receivedFilesDir: path.resolve(process.cwd(), 'received_files'),
+    receivedFilesDir: path.resolve(__dirname, '../../received_files'),
 };
 
 export default config;
