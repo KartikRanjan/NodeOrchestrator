@@ -9,7 +9,8 @@ import createRoutes from './routes/index.js';
 
 // Middleware
 import errorHandler from './middleware/errorHandler.js';
-import logger from './utils/logger.js';
+
+import registerSocketHandlers from './socket/index.js';
 
 /**
  * Express Application Configuration
@@ -18,11 +19,12 @@ import logger from './utils/logger.js';
  * security headers, CORS settings, error handling, and health check endpoints.
  * Configures the complete Express application stack with proper middleware ordering
  */
+
 function createApp() {
   const app = express();
   const httpServer = createServer(app);
 
-  // Socket.IO — CMS ↔ Frontend only
+  // Socket.IO server
   const io = new SocketIOServer(httpServer, {
     cors: { origin: '*' },
   });
@@ -43,16 +45,9 @@ function createApp() {
   // Error handling (must be last)
   app.use(errorHandler);
 
-  // Socket.IO events
-  io.on('connection', (socket) => {
-    logger.info('Frontend client connected', { socketId: socket.id });
+  // Register all Socket.IO handlers
+  registerSocketHandlers(io, container);
 
-    socket.on('disconnect', () => {
-      logger.info('Frontend client disconnected', { socketId: socket.id });
-    });
-  });
-
-  // Attach io to app so services can emit events later
   app.set('io', io);
 
   return { app, httpServer, io };

@@ -1,11 +1,11 @@
 /**
  * CMS Server Entry Point
  * @module server
- * @description Bootstraps the CMS Express application, initializes the database connection,
- * and starts the HTTP server on the configured port.
+ * @description Entry point: runs migrations, starts the HTTP server, and injects io into services.
  */
 import config from './config/index.js';
 import createApp from './app.js';
+import container from './container.js';
 import logger from './utils/logger.js';
 import db from './db/knex.js';
 
@@ -16,7 +16,9 @@ async function main() {
     await db.migrate.latest();
     logger.info('Migrations complete');
 
-    const { httpServer } = createApp();
+    const { httpServer, io } = createApp();
+
+    container.bootstrapIo(io);
 
     httpServer.listen(config.port, () => {
       logger.info(`CMS server listening on port ${config.port}`);
