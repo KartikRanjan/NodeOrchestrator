@@ -22,6 +22,9 @@ const NodeTable = () => {
     );
   }
 
+  console.log(nodes);
+  
+
   return (
     <div className="bg-white shadow-md rounded-lg overflow-hidden border border-gray-200 h-full flex flex-col">
       <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
@@ -87,21 +90,13 @@ const NodeTable = () => {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    {node.lastUploadStatus ? (
-                      <div className="flex items-center gap-2">
-                        {node.lastUploadStatus === 'success' ? (
-                          <CheckCircle2 className="w-4 h-4 text-green-500" />
-                        ) : node.lastUploadStatus === 'pending' ? (
-                          <Clock className="w-4 h-4 text-yellow-500" />
-                        ) : (
-                          <XCircle className="w-4 h-4 text-red-500" />
-                        )}
-                        <span className="text-sm text-gray-700 capitalize">
-                          {node.lastUploadStatus}
-                        </span>
+                    {node.lastFileUploadTime ? (
+                      <div className="flex items-center gap-2 text-sm text-gray-700">
+                        <Clock className="w-4 h-4 text-blue-400" />
+                        <span>{new Date(node.lastFileUploadTime).toLocaleString()}</span>
                       </div>
                     ) : (
-                      <span className="text-sm text-gray-400">-</span>
+                      <span className="text-sm text-gray-400">Never</span>
                     )}
                   </td>
                 </tr>

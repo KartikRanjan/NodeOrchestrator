@@ -15,6 +15,7 @@ class Node {
     this.status = data.status || 'connected';
     this.registeredAt = data.registered_at || data.registeredAt;
     this.updatedAt = data.updated_at || data.updatedAt;
+    this.lastFileUploadTime = data.last_file_upload_time || data.lastFileUploadTime;
   }
 
   /**
@@ -47,6 +48,7 @@ class Node {
       status: row.status,
       registeredAt: row.registered_at,
       updatedAt: row.updated_at,
+      lastFileUploadTime: row.last_file_upload_time,
     });
   }
 }

@@ -57,7 +57,15 @@ class NodeRepository {
    * Retrieve all registered nodes.
    */
   async findAll() {
-    const rows = await this.knex('nodes').select('*').orderBy('registered_at', 'desc');
+    const rows = await this.knex('nodes')
+      .select(
+        'nodes.*',
+        this.knex('node_upload_status')
+          .max('completed_at')
+          .whereRaw('node_upload_status.node_id = nodes.node_id')
+          .as('last_file_upload_time')
+      )
+      .orderBy('registered_at', 'desc');
     return rows.map((row) => Node.fromRow(row));
   }
 
@@ -65,7 +73,16 @@ class NodeRepository {
    * Retrieve a single node by its nodeId.
    */
   async findByNodeId(nodeId) {
-    const row = await this.knex('nodes').where({ node_id: nodeId }).first();
+    const row = await this.knex('nodes')
+      .select(
+        'nodes.*',
+        this.knex('node_upload_status')
+          .max('completed_at')
+          .whereRaw('node_upload_status.node_id = nodes.node_id')
+          .as('last_file_upload_time')
+      )
+      .where({ 'nodes.node_id': nodeId })
+      .first();
     return Node.fromRow(row);
   }
 
