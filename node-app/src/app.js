@@ -1,5 +1,6 @@
 import express from 'express';
 import config from './config/index.js';
+import uploadRoutes from './routes/uploadRoutes.js';
 
 /**
  * Express Application Configuration
@@ -20,6 +21,9 @@ function createApp() {
             nodeId: config.nodeId,
         });
     });
+
+    // File upload route (protected)
+    app.use('/', uploadRoutes);
 
     return app;
 }
