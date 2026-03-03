@@ -1,0 +1,21 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Environment files — never commit secrets
+.env
+.env.*
+!.env.example
+DESIGN.md
+
+
+# Uploads & received files
+cms/uploads/
+node-app/received_files/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store

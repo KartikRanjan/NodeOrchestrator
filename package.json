@@ -5,8 +5,9 @@
   "scripts": {
     "cms": "npm run dev --prefix cms",
     "nodes": "node scripts/start-nodes.js",
+    "frontend": "npm run dev --prefix frontend",
     "kill:nodes": "lsof -ti :4001,:4002,:4003,:4004,:4005 | xargs kill -9 2>/dev/null; echo 'All node workers killed'",
-    "install:all": "npm install --prefix cms && npm install --prefix node-app"
+    "install:all": "npm install --prefix cms && npm install --prefix node-app && npm install --prefix frontend"
   },
   "author": "",
   "license": "ISC",
