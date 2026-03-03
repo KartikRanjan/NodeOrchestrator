@@ -44,6 +44,30 @@ class FileRepository {
   }
 
   /**
+   * Update propagation status for a specific node + filename combination.
+   * Used by socket event handlers (upload:complete / upload:failed) where
+   * the node identifies the file by original filename, not fileUploadId.
+   *
+   * Resolves the file_upload_id by joining on filename first.
+   */
+  async updateNodeUploadStatusByFilename(nodeId, filename, status, errorMessage = null) {
+    const uploadRecord = await this.knex('file_uploads')
+      .where({ filename })
+      .orderBy('uploaded_at', 'desc')
+      .first();
+
+    if (!uploadRecord) return; // File not tracked — no-op
+
+    await this.knex('node_upload_status')
+      .where({ file_upload_id: uploadRecord.id, node_id: nodeId })
+      .update({
+        status,
+        error_message: errorMessage,
+        completed_at: new Date().toISOString(),
+      });
+  }
+
+  /**
    * Retrieve all file uploads with their per-node propagation statuses.
    */
   async findAllWithStatus() {

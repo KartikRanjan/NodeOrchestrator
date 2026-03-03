@@ -93,6 +93,21 @@ class NodeRepository {
     const rows = await this.knex('nodes').where({ status: 'connected' });
     return rows.map((row) => Node.fromRow(row));
   }
+
+  /**
+   * Refresh a node's updated_at timestamp (heartbeat).
+   * If the node was previously disconnected, also restore status to 'connected'.
+   *
+   * @param {string} nodeId
+   * @param {boolean} restoreConnected - true if node was disconnected and should be re-connected
+   */
+  async updateLastSeen(nodeId, restoreConnected = false) {
+    const patch = { updated_at: new Date().toISOString() };
+    if (restoreConnected) {
+      patch.status = 'connected';
+    }
+    await this.knex('nodes').where({ node_id: nodeId }).update(patch);
+  }
 }
 
 export default NodeRepository;
