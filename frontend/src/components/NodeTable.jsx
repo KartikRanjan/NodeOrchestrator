@@ -68,13 +68,18 @@ const NodeRow = ({ node, index, isUpdated, onFlashDone }) => {
   useEffect(() => {
     if (!isUpdated) return;
 
-    setFlashing(true);
+    // Use requestAnimationFrame to defer state update and avoid cascading renders
+    const frame = requestAnimationFrame(() => setFlashing(true));
+
     timerRef.current = setTimeout(() => {
       setFlashing(false);
       onFlashDone(node.nodeId);
     }, 1500);
 
-    return () => clearTimeout(timerRef.current);
+    return () => {
+      cancelAnimationFrame(frame);
+      clearTimeout(timerRef.current);
+    };
   }, [isUpdated, node.nodeId, onFlashDone]);
 
   return (
