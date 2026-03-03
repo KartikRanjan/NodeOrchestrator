@@ -1,4 +1,5 @@
 import express from 'express';
+import morgan from 'morgan';
 import config from './config/index.js';
 import uploadRoutes from './routes/uploadRoutes.js';
 
@@ -11,6 +12,14 @@ import uploadRoutes from './routes/uploadRoutes.js';
  */
 function createApp() {
     const app = express();
+
+    // Use morgan for HTTP request logging (prefixed for visibility in multi-node logs)
+    app.use(morgan(`[:nodeId] :method :url :status :res[content-length] - :response-time ms`, {
+        skip: (req, res) => req.url === '/health' // Skip health checks to keep logs clean
+    }));
+    
+    // Register the nodeId token for morgan
+    morgan.token('nodeId', () => config.nodeId);
 
     app.use(express.json());
 
