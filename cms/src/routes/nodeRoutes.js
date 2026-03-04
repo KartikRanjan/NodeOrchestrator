@@ -12,12 +12,12 @@ function createNodeRoutes(nodeController) {
   const router = Router();
 
   // Protected — called by Node Apps
-  router.post('/register', authMiddleware,  nodeController.register);
+  router.post('/register', authMiddleware, nodeController.register);
   router.post('/disconnect', authMiddleware, nodeController.disconnect);
 
-  // Open — consumed by React frontend
-  router.get('/', nodeController.listAll);
-  router.get('/:nodeId', nodeController.getNodeById);
+  // Protected — consumed by React frontend
+  router.get('/', authMiddleware, nodeController.listAll);
+  router.get('/:nodeId', authMiddleware, nodeController.getNodeById);
 
   return router;
 }

@@ -20,6 +20,10 @@ const config = {
     connectionString: process.env.DB_URI,
   },
   uploadsDir: path.resolve(__dirname, '..', '..', 'uploads'),
+
+  // Node health settings
+  nodeHeartbeatThreshold: parseInt(process.env.NODE_HEARTBEAT_THRESHOLD, 10) || 60, // 60 seconds
+  nodeCleanupInterval: parseInt(process.env.NODE_CLEANUP_INTERVAL, 10) || 30, // 30 seconds
 };
 
 export default config;

@@ -14,6 +14,7 @@
 import axios from 'axios';
 import { io as socketIOClient } from 'socket.io-client';
 import config from '../config/index.js';
+import { NODE_CONNECTED } from '../constants/events.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // HTTP Registration (startup + graceful shutdown)
@@ -92,6 +93,9 @@ const connectSocket = () => {
             type: 'node',
             nodeId: config.nodeId,
         },
+        auth: {
+            apiKey: config.apiKey,
+        },
         transports: ['websocket'],
         reconnection: true,
         reconnectionAttempts: Infinity,
@@ -103,7 +107,7 @@ const connectSocket = () => {
         console.log(`[${config.nodeId}] Socket connected to CMS (socketId: ${_socket.id})`);
 
         // Announce this node to the CMS — CMS updates DB + emits to dashboard
-        _socket.emit('node:connected', {
+        _socket.emit(NODE_CONNECTED, {
             nodeId: config.nodeId,
             ip: config.nodeIp,
             port: config.port,
@@ -118,15 +122,6 @@ const connectSocket = () => {
 
     _socket.on('connect_error', (err) => {
         console.warn(`[${config.nodeId}] Socket connection error: ${err.message}`);
-    });
-
-    // ── CMS → Node: targeted file upload event ──────────────────────────
-    // The CMS emits this to "node:<nodeId>" or "nodes" room when a file
-    // should be pulled or when the node should prepare to receive a push.
-    // Actual file transfer continues to happen via HTTP POST /upload.
-    _socket.on('file:upload', (fileMeta) => {
-        console.log(`[${config.nodeId}] Received file:upload signal from CMS`, fileMeta);
-        // The node prepares for the incoming HTTP POST
     });
 
     return _socket;
