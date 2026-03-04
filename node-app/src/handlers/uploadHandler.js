@@ -10,6 +10,10 @@ import { emitUploadResult } from '../services/registrationService.js';
 import { UPLOAD_COMPLETE, UPLOAD_FAILED } from '../constants/events.js';
 
 const handleFileUpload = (req, res) => {
+    if (!req.file) {
+        return res.status(400).json({ error: 'No file provided' });
+    }
+
     try {
         const savedTo = path.join(config.receivedFilesDir, req.file.filename);
 
