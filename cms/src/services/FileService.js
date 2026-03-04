@@ -8,10 +8,12 @@ import fs from 'fs';
 
 import axios from 'axios';
 import FormData from 'form-data';
+import pLimit from 'p-limit';
 
 import logger from '../utils/logger.js';
 import config from '../config/index.js';
 import AppError from '../errors/AppError.js';
+import { PROPAGATION_CONCURRENCY } from '../constants/index.js';
 
 /**
  *  1. Recording the upload in the database
@@ -66,16 +68,17 @@ class FileService {
       await this.fileRepository.createNodeUploadStatus(fileId, node.nodeId);
     }
 
-    // 4. Propagate to all nodes in parallel
+    // 4. Propagate to all nodes with bounded concurrency
+    const limit = pLimit(PROPAGATION_CONCURRENCY);
     const propagationPromises = connectedNodes.map((node) =>
-      this._propagateToNode({ node, filePath, filename, fileId }),
+      limit(() => this._propagateToNode({ node, filePath, filename, fileId })),
     );
 
-    const results = await Promise.allSettled(propagationPromises);
+    const results = await Promise.all(propagationPromises);
 
     return {
       fileId,
-      results: results.map((r) => r.value || r.reason),
+      results,
     };
   }
 

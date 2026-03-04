@@ -10,6 +10,7 @@ import createRoutes from './routes/index.js';
 
 // Middleware
 import errorHandler from './middleware/errorHandler.js';
+import { apiLimiter } from './middleware/rateLimiter.js';
 
 import registerSocketHandlers from './socket/index.js';
 
@@ -34,10 +35,11 @@ function createApp() {
   app.use(cors());
   app.use(morgan('dev'));
   app.use(express.json());
+  app.disable('x-powered-by');
   app.use(express.urlencoded({ extended: true }));
 
   // Routes
-  app.use('/api', createRoutes(container));
+  app.use('/api', apiLimiter, createRoutes(container));
 
   // Health check
   app.get('/health', (req, res) => {

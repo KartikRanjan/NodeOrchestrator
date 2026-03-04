@@ -8,20 +8,13 @@ import { Router } from 'express';
 
 import authMiddleware from '../middleware/authMiddleware.js';
 import uploadMiddleware from '../middleware/uploadMiddleware.js';
+import { uploadLimiter } from '../middleware/rateLimiter.js';
 
-/**
- * File routes — /api/files
- *
- * POST /upload is protected and expects multipart/form-data with a 'file' field.
- * GET / is open (consumed by the React frontend).
- *
- * @param {import('../controllers/FileController.js').default} fileController
- */
 function createFileRoutes(fileController) {
   const router = Router();
 
-  // Protected — upload + propagate
-  router.post('/upload', authMiddleware, uploadMiddleware.single('file'), fileController.upload);
+  // Protected — upload + propagate (stricter rate limit)
+  router.post('/upload', authMiddleware, uploadLimiter, uploadMiddleware.single('file'), fileController.upload);
 
   // Open — list all uploads with statuses
   router.get('/', authMiddleware, fileController.listAll);
