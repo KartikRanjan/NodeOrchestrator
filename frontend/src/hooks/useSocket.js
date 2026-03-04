@@ -2,8 +2,10 @@ import { useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { io } from 'socket.io-client';
 import { nodeStatusUpdated, updateNodeUploadStatus } from '../features/nodes/nodesSlice';
+import { NODE_STATUS_UPDATED, UPLOAD_COMPLETE, UPLOAD_FAILED } from '../constants/events';
 
 const SOCKET_URL = import.meta.env.VITE_CMS_SOCKET_URL || 'http://localhost:3000';
+const API_KEY = import.meta.env.VITE_API_KEY;
 
 /**
  * useSocket — Dashboard Real-time Sync
@@ -15,6 +17,7 @@ export const useSocket = () => {
     useEffect(() => {
         const socket = io(SOCKET_URL, {
             query: { type: 'dashboard' },
+            auth: { apiKey: API_KEY },
             reconnectionAttempts: 10,
             reconnectionDelay: 1500,
         });
@@ -28,27 +31,14 @@ export const useSocket = () => {
         });
 
         // Update node status (online/offline)
-        socket.on('node:status-updated', (payload) => {
+        socket.on(NODE_STATUS_UPDATED, (payload) => {
             dispatch(nodeStatusUpdated(payload));
         });
 
-        // Informational: CMS started propagation
-        socket.on('file:upload:start', (payload) => {
-            console.log('[Dashboard] file:upload:start', payload);
-        });
 
-        // Final result from CMS HTTP push
-        socket.on('file:status', (payload) => {
-            dispatch(updateNodeUploadStatus({
-                nodeId: payload.nodeId,
-                status: payload.status,
-                filename: payload.filename,
-                error: payload.error,
-            }));
-        });
 
         // Results initiated via node's own socket
-        socket.on('upload:complete', (payload) => {
+        socket.on(UPLOAD_COMPLETE, (payload) => {
             dispatch(updateNodeUploadStatus({
                 nodeId: payload.nodeId,
                 filename: payload.fileName,
@@ -56,7 +46,7 @@ export const useSocket = () => {
             }));
         });
 
-        socket.on('upload:failed', (payload) => {
+        socket.on(UPLOAD_FAILED, (payload) => {
             dispatch(updateNodeUploadStatus({
                 nodeId: payload.nodeId,
                 filename: payload.fileName,

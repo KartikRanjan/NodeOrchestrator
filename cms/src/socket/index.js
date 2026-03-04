@@ -6,6 +6,11 @@
  */
 
 import logger from '../utils/logger.js';
+import config from '../config/index.js';
+import {
+    NODE_CONNECTED, NODE_HEARTBEAT, NODE_STATUS_UPDATED,
+    UPLOAD_COMPLETE, UPLOAD_FAILED,
+} from '../constants/events.js';
 
 /**
  * Registers event listeners for Dashboard clients (UI updates only).
@@ -38,7 +43,7 @@ function registerNodeHandlers(socket, io, container, socketNodeMap) {
     logger.info('Node worker connected', { socketId: socket.id, nodeId });
 
     // Handle node registration and status sync
-    socket.on('node:connected', async (payload) => {
+    socket.on(NODE_CONNECTED, async (payload) => {
         try {
             logger.info('node:connected', { nodeId: payload.nodeId });
             await container.nodeService.registerNode({
@@ -46,7 +51,7 @@ function registerNodeHandlers(socket, io, container, socketNodeMap) {
                 ip: payload.ip,
                 port: payload.port,
             });
-            io.to('dashboard').emit('node:status-updated', {
+            io.to('dashboard').emit(NODE_STATUS_UPDATED, {
                 nodeId: payload.nodeId,
                 ip: payload.ip,
                 port: payload.port,
@@ -59,11 +64,11 @@ function registerNodeHandlers(socket, io, container, socketNodeMap) {
     });
 
     // Update node health and notify dashboard on status changes
-    socket.on('node:heartbeat', async (payload) => {
+    socket.on(NODE_HEARTBEAT, async (payload) => {
         try {
             const updated = await container.nodeService.updateLastSeen(payload.nodeId);
             if (updated?.statusChanged) {
-                io.to('dashboard').emit('node:status-updated', {
+                io.to('dashboard').emit(NODE_STATUS_UPDATED, {
                     nodeId: payload.nodeId,
                     status: 'connected',
                     timestamp: payload.timestamp,
@@ -74,30 +79,16 @@ function registerNodeHandlers(socket, io, container, socketNodeMap) {
         }
     });
 
-    // Notify dashboard on successful file upload to a node
-    socket.on('upload:complete', async (payload) => {
-        try {
-            logger.info('upload:complete', { nodeId: payload.nodeId, fileName: payload.fileName });
-            await container.fileService.updateUploadStatusByNodeAndFile(
-                payload.nodeId, payload.fileName, 'success',
-            );
-            io.to('dashboard').emit('upload:complete', payload);
-        } catch (err) {
-            logger.error('Failed to handle upload:complete', { error: err.message });
-        }
+    // Relay upload results to dashboard for real-time UI updates.
+    // DB status is already persisted by the REST propagation flow in FileService._propagateToNode().
+    socket.on(UPLOAD_COMPLETE, (payload) => {
+        logger.info('upload:complete', { nodeId: payload.nodeId, fileName: payload.fileName });
+        io.to('dashboard').emit(UPLOAD_COMPLETE, payload);
     });
 
-    // Notify dashboard on failed file upload to a node
-    socket.on('upload:failed', async (payload) => {
-        try {
-            logger.error('upload:failed', { nodeId: payload.nodeId, fileName: payload.fileName });
-            await container.fileService.updateUploadStatusByNodeAndFile(
-                payload.nodeId, payload.fileName, 'failure', payload.error,
-            );
-            io.to('dashboard').emit('upload:failed', payload);
-        } catch (err) {
-            logger.error('Failed to handle upload:failed', { error: err.message });
-        }
+    socket.on(UPLOAD_FAILED, (payload) => {
+        logger.error('upload:failed', { nodeId: payload.nodeId, fileName: payload.fileName });
+        io.to('dashboard').emit(UPLOAD_FAILED, payload);
     });
 
     // Handle abrupt node disconnection
@@ -114,7 +105,7 @@ function registerNodeHandlers(socket, io, container, socketNodeMap) {
 
         try {
             await container.nodeService.disconnectNode(disconnectedNodeId, { emitEvent: false });
-            io.to('dashboard').emit('node:status-updated', {
+            io.to('dashboard').emit(NODE_STATUS_UPDATED, {
                 nodeId: disconnectedNodeId,
                 status: 'disconnected',
                 timestamp: new Date().toISOString(),
@@ -132,6 +123,16 @@ function registerNodeHandlers(socket, io, container, socketNodeMap) {
  */
 function registerSocketHandlers(io, container) {
     const socketNodeMap = new Map(); // Tracks socketId to nodeId associations
+
+    // Authenticate every socket connection via API key
+    io.use((socket, next) => {
+        const apiKey = socket.handshake.auth?.apiKey;
+        if (!apiKey || apiKey !== config.apiKey) {
+            logger.warn('Socket auth failed — invalid or missing API key', { socketId: socket.id });
+            return next(new Error('Unauthorized — invalid or missing API key'));
+        }
+        next();
+    });
 
     io.on('connection', (socket) => {
         const { type } = socket.handshake.query;

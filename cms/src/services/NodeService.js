@@ -10,6 +10,7 @@
  */
 import logger from '../utils/logger.js';
 import AppError from '../errors/AppError.js';
+import { NODE_STATUS_UPDATED } from '../constants/events.js';
 
 class NodeService {
   constructor(nodeRepository) {
@@ -77,7 +78,7 @@ class NodeService {
     // Emit to dashboard room only if triggered via REST (not from socket handler
     // which already manages its own emission to avoid double-emit).
     if (emitEvent && this._io) {
-      this._io.to('dashboard').emit('node:status-updated', {
+      this._io.to('dashboard').emit(NODE_STATUS_UPDATED, {
         nodeId,
         status: 'disconnected',
         timestamp: new Date().toISOString(),
