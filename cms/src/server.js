@@ -20,6 +20,12 @@ async function main() {
 
     container.bootstrapIo(io);
 
+    // Start periodic stale node cleanup
+    setInterval(() => {
+      container.nodeService.cleanupStaleNodes(config.nodeHeartbeatThreshold)
+        .catch((err) => logger.error('Stale node cleanup failed', { error: err.message }));
+    }, config.nodeCleanupInterval * 1000);
+
     httpServer.listen(config.port, () => {
       logger.info(`CMS server listening on port ${config.port}`);
     });

@@ -108,6 +108,35 @@ class NodeRepository {
     }
     await this.knex('nodes').where({ node_id: nodeId }).update(patch);
   }
+
+  /**
+   * Find and mark nodes as 'disconnected' if they haven't sent a heartbeat
+   * within the given threshold (in seconds).
+   *
+   * @param {number} thresholdSeconds - The maximum age of a heartbeat before a node is considered stale.
+   * @returns {Promise<string[]>} - The IDs of the nodes that were marked as disconnected.
+   */
+  async cleanupStaleNodes(thresholdSeconds) {
+    const thresholdDate = new Date(Date.now() - thresholdSeconds * 1000).toISOString();
+
+    const staleNodes = await this.knex('nodes')
+      .where('status', 'connected')
+      .andWhere('updated_at', '<', thresholdDate)
+      .select('node_id');
+
+    const nodeIds = staleNodes.map((n) => n.node_id);
+
+    if (nodeIds.length > 0) {
+      await this.knex('nodes')
+        .whereIn('node_id', nodeIds)
+        .update({
+          status: 'disconnected',
+          updated_at: new Date().toISOString(),
+        });
+    }
+
+    return nodeIds;
+  }
 }
 
 export default NodeRepository;

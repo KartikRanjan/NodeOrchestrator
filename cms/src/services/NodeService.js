@@ -136,6 +136,31 @@ class NodeService {
   async getConnectedNodes() {
     return this.nodeRepository.findConnected();
   }
+
+  /**
+   * Periodically check for stale nodes and mark them as disconnected.
+   *
+   * @param {number} thresholdSeconds - Nodes not seen in this many seconds are marked stale.
+   */
+  async cleanupStaleNodes(thresholdSeconds) {
+    logger.debug('Running stale node cleanup', { thresholdSeconds });
+    const disconnectedNodeIds = await this.nodeRepository.cleanupStaleNodes(thresholdSeconds);
+
+    if (disconnectedNodeIds.length > 0) {
+      logger.info('Marked stale nodes as disconnected', { count: disconnectedNodeIds.length, nodeIds: disconnectedNodeIds });
+
+      // Notify dashboard for each disconnected node
+      if (this._io) {
+        disconnectedNodeIds.forEach((nodeId) => {
+          this._io.to('dashboard').emit(NODE_STATUS_UPDATED, {
+            nodeId,
+            status: 'disconnected',
+            timestamp: new Date().toISOString(),
+          });
+        });
+      }
+    }
+  }
 }
 
 export default NodeService;
