@@ -156,3 +156,55 @@ NodeOrchestrator/
 - `GET /health`: Basic health check.
 
 ---
+
+## 🧪 Sample cURL Commands
+
+> Replace `YOUR_API_KEY` with the value from your root `.env` file.
+
+### Register a Node
+```bash
+curl -X POST http://localhost:3000/api/nodes/register \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: YOUR_API_KEY" \
+  -d '{"nodeId": "node-manual-1", "ip": "127.0.0.1", "port": 4001}'
+```
+
+### List All Nodes
+```bash
+curl http://localhost:3000/api/nodes
+  -H "x-api-key: YOUR_API_KEY"
+```
+
+### Get a Single Node
+```bash
+curl http://localhost:3000/api/nodes/node-manual-1
+  -H "x-api-key: YOUR_API_KEY"
+```
+
+### Upload a File (Propagate to All Nodes)
+```bash
+curl -X POST http://localhost:3000/api/files/upload \
+  -H "x-api-key: YOUR_API_KEY" \
+  -F "file=@./README.md"
+```
+
+### List All Uploads with Per-Node Status
+```bash
+curl http://localhost:3000/api/files \
+  -H "x-api-key: YOUR_API_KEY"
+```
+
+### Disconnect a Node
+```bash
+curl -X POST http://localhost:3000/api/nodes/disconnect \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: YOUR_API_KEY" \
+  -d '{"nodeId": "node-manual-1"}'
+```
+
+### Node Worker Health Check
+```bash
+curl http://localhost:4001/health
+```
+
+---
