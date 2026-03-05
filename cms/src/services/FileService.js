@@ -63,10 +63,12 @@ class FileService {
       });
     }
 
-    // 3. Create pending status records for each node
-    for (const node of connectedNodes) {
-      await this.fileRepository.createNodeUploadStatus(fileId, node.nodeId);
-    }
+    // 3. Create pending status records for each node in parallel
+    await Promise.all(
+      connectedNodes.map((node) =>
+        this.fileRepository.createNodeUploadStatus(fileId, node.nodeId)
+      )
+    );
 
     // 4. Propagate to all nodes with bounded concurrency
     const limit = pLimit(PROPAGATION_CONCURRENCY);
