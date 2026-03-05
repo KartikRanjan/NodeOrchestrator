@@ -17,7 +17,7 @@ const config = {
 
   db: {
     client: 'pg',
-    connectionString: process.env.DB_URI,
+    connectionString: process.env.DATABASE_URL,
   },
   uploadsDir: path.resolve(__dirname, '..', '..', 'uploads'),
 

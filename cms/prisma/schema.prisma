@@ -1,0 +1,45 @@
+// This is Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Node {
+  id                 String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nodeId             String             @unique @map("node_id") @db.VarChar(100)
+  ip                 String             @db.VarChar(45)
+  port               Int
+  status             String             @default("connected") @db.VarChar(20)
+  registeredAt       DateTime?          @default(now()) @map("registered_at") @db.Timestamp(6)
+  updatedAt          DateTime?          @default(now()) @map("updated_at") @db.Timestamp(6)
+  nodeUploadStatuses NodeUploadStatus[]
+
+  @@map("nodes")
+}
+
+model FileUpload {
+  id                 String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  filename           String             @db.VarChar(255)
+  uploadedAt         DateTime?          @default(now()) @map("uploaded_at") @db.Timestamp(6)
+  nodeUploadStatuses NodeUploadStatus[]
+
+  @@map("file_uploads")
+}
+
+model NodeUploadStatus {
+  id           String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  fileUploadId String      @map("file_upload_id") @db.Uuid
+  nodeId       String      @map("node_id") @db.VarChar(100)
+  status       String      @default("pending") @db.VarChar(20)
+  errorMessage String?     @map("error_message") @db.Text
+  completedAt  DateTime?   @map("completed_at") @db.Timestamp(6)
+  fileUpload   FileUpload  @relation(fields: [fileUploadId], references: [id], onDelete: Cascade)
+  node         Node        @relation(fields: [nodeId], references: [nodeId], onDelete: Cascade)
+
+  @@map("node_upload_status")
+}
