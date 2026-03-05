@@ -16,13 +16,32 @@ const UploadStatusBadge = ({ status, filename, error }) => {
   if (!status) return <span className="text-sm text-gray-400">—</span>;
 
   const cfg = {
-    success: { icon: <CheckCircle2 className="w-3.5 h-3.5" />, cls: 'bg-green-100 text-green-700', label: 'Success' },
-    failure: { icon: <XCircle     className="w-3.5 h-3.5" />, cls: 'bg-red-100   text-red-700',   label: 'Failed'  },
-  }[status] ?? { icon: <XCircle className="w-3.5 h-3.5" />, cls: 'bg-gray-100 text-gray-600', label: status };
+    uploading: {
+      icon: <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />,
+      cls: 'bg-blue-50 text-blue-700',
+      label: 'Uploading',
+    },
+    success: {
+      icon: <CheckCircle2 className="w-3.5 h-3.5" />,
+      cls: 'bg-green-100 text-green-700',
+      label: 'Success',
+    },
+    failure: {
+      icon: <XCircle className="w-3.5 h-3.5" />,
+      cls: 'bg-red-100 text-red-700',
+      label: 'Failed',
+    },
+  }[status] ?? {
+    icon: <XCircle className="w-3.5 h-3.5" />,
+    cls: 'bg-gray-100 text-gray-600',
+    label: status,
+  };
 
   return (
     <div className="flex flex-col gap-0.5">
-      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${cfg.cls}`}>
+      <span
+        className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium ${cfg.cls}`}
+      >
         {cfg.icon}
         {cfg.label}
       </span>

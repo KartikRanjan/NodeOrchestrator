@@ -1,5 +1,3 @@
-import Node from '../models/NodeModel.js';
-
 /**
  * Node Repository
  * @module NodeRepository
@@ -7,8 +5,8 @@ import Node from '../models/NodeModel.js';
  * Provides CRUD operations for node registration and health tracking.
  */
 class NodeRepository {
-  constructor(knex) {
-    this.knex = knex;
+  constructor(prisma) {
+    this.prisma = prisma;
   }
 
   /**
@@ -16,82 +14,98 @@ class NodeRepository {
    * Sets status to 'connected' and refreshes updated_at.
    */
   async upsert({ nodeId, ip, port }) {
-    const existing = await this.knex('nodes').where({ node_id: nodeId }).first();
-
-    if (existing) {
-      await this.knex('nodes').where({ node_id: nodeId }).update({
+    const node = await this.prisma.node.upsert({
+      where: { nodeId },
+      update: {
         ip,
         port,
         status: 'connected',
-        updated_at: new Date().toISOString(),
-      });
-      const updatedRow = await this.knex('nodes').where({ node_id: nodeId }).first();
-      return Node.fromRow(updatedRow);
-    }
-
-    const [newRow] = await this.knex('nodes')
-      .insert({
-        node_id: nodeId,
+        updatedAt: new Date(),
+      },
+      create: {
+        nodeId,
         ip,
         port,
         status: 'connected',
-      })
-      .returning('*');
+      },
+    });
 
-    return Node.fromRow(newRow);
+    return this._mapNode(node);
   }
 
   /**
    * Mark a node as disconnected by its nodeId.
    */
   async disconnect(nodeId) {
-    const updated = await this.knex('nodes').where({ node_id: nodeId }).update({
-      status: 'disconnected',
-      updated_at: new Date().toISOString(),
-    });
-
-    return updated > 0;
+    try {
+      await this.prisma.node.update({
+        where: { nodeId },
+        data: {
+          status: 'disconnected',
+          updatedAt: new Date(),
+        },
+      });
+      return true;
+    } catch (error) {
+      return false;
+    }
   }
 
   /**
    * Retrieve all registered nodes.
    */
   async findAll() {
-    const rows = await this.knex('nodes')
-      .select(
-        'nodes.*',
-        this.knex('node_upload_status')
-          .max('completed_at')
-          .whereRaw('node_upload_status.node_id = nodes.node_id')
-          .as('last_file_upload_time')
-      )
-      .orderBy('registered_at', 'desc');
-    return rows.map((row) => Node.fromRow(row));
+    const nodes = await this.prisma.node.findMany({
+      include: {
+        nodeUploadStatuses: {
+          where: {
+            status: 'success',
+            completedAt: { not: null },
+          },
+          orderBy: { completedAt: 'desc' },
+          take: 1,
+        },
+      },
+      orderBy: { registeredAt: 'desc' },
+    });
+
+    return nodes.map((n) => this._mapNode(n));
   }
 
   /**
    * Retrieve a single node by its nodeId.
    */
   async findByNodeId(nodeId) {
-    const row = await this.knex('nodes')
-      .select(
-        'nodes.*',
-        this.knex('node_upload_status')
-          .max('completed_at')
-          .whereRaw('node_upload_status.node_id = nodes.node_id')
-          .as('last_file_upload_time')
-      )
-      .where({ 'nodes.node_id': nodeId })
-      .first();
-    return Node.fromRow(row);
+    const node = await this.prisma.node.findUnique({
+      where: { nodeId },
+      include: {
+        nodeUploadStatuses: {
+          where: {
+            status: 'success',
+            completedAt: { not: null },
+          },
+          orderBy: { completedAt: 'desc' },
+          take: 1,
+        },
+      },
+    });
+
+    return this._mapNode(node);
   }
 
   /**
    * Retrieve all nodes with status 'connected'.
    */
   async findConnected() {
-    const rows = await this.knex('nodes').where({ status: 'connected' });
-    return rows.map((row) => Node.fromRow(row));
+    return await this.prisma.node.findMany({
+      where: { status: 'connected' },
+      select: {
+        nodeId: true,
+        ip: true,
+        port: true,
+        status: true,
+      },
+    });
   }
 
   /**
@@ -102,11 +116,19 @@ class NodeRepository {
    * @param {boolean} restoreConnected - true if node was disconnected and should be re-connected
    */
   async updateLastSeen(nodeId, restoreConnected = false) {
-    const patch = { updated_at: new Date().toISOString() };
+    const data = { updatedAt: new Date() };
     if (restoreConnected) {
-      patch.status = 'connected';
+      data.status = 'connected';
     }
-    await this.knex('nodes').where({ node_id: nodeId }).update(patch);
+
+    try {
+      await this.prisma.node.update({
+        where: { nodeId },
+        data,
+      });
+    } catch (error) {
+      // Ignore if node doesn't exist
+    }
   }
 
   /**
@@ -117,26 +139,49 @@ class NodeRepository {
    * @returns {Promise<string[]>} - The IDs of the nodes that were marked as disconnected.
    */
   async cleanupStaleNodes(thresholdSeconds) {
-    const thresholdDate = new Date(Date.now() - thresholdSeconds * 1000).toISOString();
+    const thresholdDate = new Date(Date.now() - thresholdSeconds * 1000);
 
-    const staleNodes = await this.knex('nodes')
-      .where('status', 'connected')
-      .andWhere('updated_at', '<', thresholdDate)
-      .select('node_id');
+    const staleNodes = await this.prisma.node.findMany({
+      where: {
+        status: 'connected',
+        updatedAt: { lt: thresholdDate },
+      },
+      select: { nodeId: true },
+    });
 
-    const nodeIds = staleNodes.map((n) => n.node_id);
+    const nodeIds = staleNodes.map((n) => n.nodeId);
 
     if (nodeIds.length > 0) {
-      await this.knex('nodes')
-        .whereIn('node_id', nodeIds)
-        .update({
+      await this.prisma.node.updateMany({
+        where: { nodeId: { in: nodeIds } },
+        data: {
           status: 'disconnected',
-          updated_at: new Date().toISOString(),
-        });
+          updatedAt: new Date(),
+        },
+      });
     }
 
     return nodeIds;
   }
+
+  /**
+   * Map the Prisma node record to our application's data structure.
+   * @private
+   */
+  _mapNode(node) {
+    if (!node) return null;
+
+    return {
+      nodeId: node.nodeId,
+      ip: node.ip,
+      port: node.port,
+      status: node.status,
+      registeredAt: node.registeredAt,
+      updatedAt: node.updatedAt,
+      lastFileUploadTime: node.nodeUploadStatuses?.[0]?.completedAt || undefined,
+    };
+  }
 }
 
 export default NodeRepository;
+

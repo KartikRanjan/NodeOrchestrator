@@ -5,7 +5,7 @@
  * Facilitates dependency injection across the application layers.
  */
 
-import db from './db/knex.js';
+import prisma from './db/prisma.js';
 
 import NodeRepository from './repositories/NodeRepository.js';
 import FileRepository from './repositories/FileRepository.js';
@@ -18,8 +18,8 @@ import FileController from './controllers/FileController.js';
 
 class Container {
   constructor() {
-    this.nodeRepository = new NodeRepository(db);
-    this.fileRepository = new FileRepository(db);
+    this.nodeRepository = new NodeRepository(prisma);
+    this.fileRepository = new FileRepository(prisma);
 
     this.nodeService = new NodeService(this.nodeRepository);
     this.fileService = new FileService(this.fileRepository, this.nodeRepository);

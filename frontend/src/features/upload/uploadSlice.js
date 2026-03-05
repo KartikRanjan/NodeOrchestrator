@@ -5,8 +5,20 @@ import { updateNodeUploadStatus } from '../nodes/nodesSlice';
 // Upload file and update nodes slice with results
 export const uploadFile = createAsyncThunk(
   'upload/uploadFile',
-  async (file, { dispatch, rejectWithValue }) => {
+  async (file, { dispatch, getState, rejectWithValue }) => {
     try {
+      // Get all connected nodes to set them to 'uploading' state
+      const { nodes } = getState();
+      const connectedNodes = nodes.data.filter(n => n.status === 'connected');
+      
+      connectedNodes.forEach(node => {
+        dispatch(updateNodeUploadStatus({ 
+          nodeId: node.nodeId, 
+          status: 'uploading', 
+          filename: file.name 
+        }));
+      });
+
       const formData = new FormData();
       formData.append('file', file);
 

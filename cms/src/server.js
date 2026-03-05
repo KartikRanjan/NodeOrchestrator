@@ -1,21 +1,15 @@
 /**
  * CMS Server Entry Point
  * @module server
- * @description Entry point: runs migrations, starts the HTTP server, and injects io into services.
+ * @description Entry point: starts the HTTP server, and injects io into services.
  */
 import config from './config/index.js';
 import createApp from './app.js';
 import container from './container.js';
 import logger from './utils/logger.js';
-import db from './db/knex.js';
 
 async function main() {
   try {
-    // Run pending migrations before starting the server
-    logger.info('Running database migrations...');
-    await db.migrate.latest();
-    logger.info('Migrations complete');
-
     const { httpServer, io } = createApp();
 
     container.bootstrapIo(io);
