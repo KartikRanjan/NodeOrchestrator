@@ -14,7 +14,7 @@
 import axios from 'axios';
 import { io as socketIOClient } from 'socket.io-client';
 import config from '../config/index.js';
-import { NODE_CONNECTED } from '../constants/events.js';
+import { NODE_CONNECTED, NODE_HEARTBEAT } from '../constants/events.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // HTTP Registration (startup + graceful shutdown)
@@ -66,6 +66,7 @@ const disconnectFromCMS = async () => {
 };
 
 let _socket = null;
+let _heartbeatInterval = null;
 
 /**
  * Open a Socket.IO connection to the CMS as a node worker.
@@ -76,10 +77,11 @@ let _socket = null;
  *
  * On connect:
  *   - Emits "node:connected" so CMS can update DB + notify dashboard
+ *   - Starts periodic "node:heartbeat" to keep the CMS from marking it stale
  *
  * On disconnect (socket drop):
  *   - CMS socket server detects drop and marks node as disconnected in DB
- *   - No explicit emit needed from the node side
+ *   - Stops the heartbeat interval
  *
  * @returns {import('socket.io-client').Socket}
  */
@@ -113,11 +115,26 @@ const connectSocket = () => {
             port: config.port,
             timestamp: new Date().toISOString(),
         });
+
+        // Start periodic heartbeat
+        if (_heartbeatInterval) clearInterval(_heartbeatInterval);
+        _heartbeatInterval = setInterval(() => {
+            if (_socket.connected) {
+                _socket.emit(NODE_HEARTBEAT, {
+                    nodeId: config.nodeId,
+                    timestamp: new Date().toISOString(),
+                });
+            }
+        }, config.nodeHeartbeatInterval * 1000);
     });
 
     _socket.on('disconnect', (reason) => {
         console.log(`[${config.nodeId}] Socket disconnected from CMS (reason: ${reason})`);
-        // CMS detects the drop via its own disconnect handler — no action needed here
+        // Stop heartbeat on disconnect
+        if (_heartbeatInterval) {
+            clearInterval(_heartbeatInterval);
+            _heartbeatInterval = null;
+        }
     });
 
     _socket.on('connect_error', (err) => {

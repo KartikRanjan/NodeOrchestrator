@@ -19,6 +19,7 @@ const config = {
     cmsUrl: process.env.CMS_URL || 'http://localhost:3000',
     apiKey: process.env.API_KEY,
     receivedFilesDir: path.resolve(__dirname, '../../received_files'),
+    nodeHeartbeatInterval: parseInt(process.env.NODE_HEARTBEAT_INTERVAL, 10) || 15, // 15 seconds
 };
 
 export default config;
